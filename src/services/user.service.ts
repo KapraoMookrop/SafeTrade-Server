@@ -8,8 +8,8 @@ import { ENV } from "../config/env.js";
 import { type LoginResponseData } from "../module/LoginResponseData.js";
 import { AppError } from "../errors/AppError.js";
 
-export async function SignUp(signUpDataRequest: SignUpDataRequest): Promise<UUID> {
-  const { FullName, Email, Password, Phone, Role } = signUpDataRequest;
+export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
+  const { FullName, Email, Password, Phone, Role } = request;
 
   const existingPhone = await pool.query("SELECT id FROM ct.users WHERE phone = $1", [Phone]);
   if (existingPhone.rows.length > 0) {
