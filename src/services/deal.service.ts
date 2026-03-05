@@ -5,8 +5,10 @@ import type { SendMessagesRequest } from "../module/SendMessagesRequest.js";
 import { getIO } from "../socket.js";
 import type { ReadMessagesRequest } from "../module/ReadMessagesRequest.js";
 import { AppError } from "../errors/AppError.js";
+import type { CreateChatRoomRequest } from "../module/CreateChatRoomRequest.js";
+import { ChatRoomStatus } from "../module/Enum.js";
 
-export async function CreateChatRoom(request: CreateDealRequest): Promise<UUID> {
+export async function CreateChatRoom(request: CreateChatRoomRequest): Promise<UUID> {
     const { BuyerId, SellerId } = request;
     const client = await pool.connect();
 
@@ -14,9 +16,9 @@ export async function CreateChatRoom(request: CreateDealRequest): Promise<UUID> 
         await client.query("BEGIN");
 
         const room = await client.query(
-            `INSERT INTO ct.chat_rooms (buyer_id, seller_id)
-             VALUES ($1, $2) RETURNING id`,
-            [BuyerId, SellerId]
+            `INSERT INTO ct.chat_rooms (buyer_id, seller_id, status)
+             VALUES ($1, $2, $3) RETURNING id`,
+            [BuyerId, SellerId, ChatRoomStatus.ACTIVE]
         );
 
         const chatRoomId = room.rows[0].id;
