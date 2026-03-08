@@ -2,14 +2,14 @@ import pool from "../config/database.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { type SignUpDataRequest } from "../module/SignUpDataRequest.js";
-import { KycStatus, UserStatus } from "../module/Enum.js";
+import { KycStatus, UserStatus, UserRole } from "../module/Enum.js";
 import type { UUID } from "node:crypto";
 import { ENV } from "../config/env.js";
 import { type LoginResponseData } from "../module/LoginResponseData.js";
 import { AppError } from "../errors/AppError.js";
 
 export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
-  const { FullName, Email, Password, Phone, Role } = request;
+  const { FullName, Email, Password, Phone } = request;
 
   const existingPhone = await pool.query("SELECT id FROM ct.users WHERE phone = $1", [Phone]);
   if (existingPhone.rows.length > 0) {
@@ -25,7 +25,7 @@ export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
 
   const result = await pool.query(
     "INSERT INTO ct.users (full_name, email, password_hash, phone, role, kyc_status, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-    [FullName, Email, hashedPassword, Phone, Role, KycStatus.PENDING, UserStatus.ACTIVE]
+    [FullName, Email, hashedPassword, Phone, UserRole.BUYER, KycStatus.PENDING, UserStatus.ACTIVE]
   );
 
   return result.rows[0].id;
