@@ -7,5 +7,6 @@ const router = Router();
 router.get("/GetProvinces", coreController.GetProvinces);
 router.get("/GetDistricts", coreController.GetDistricts);
 router.get("/GetSubDistricts", coreController.GetSubDistricts);
+router.get("/VerifyEmail", coreController.VerifyEmail);
 
 export default router;

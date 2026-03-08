@@ -29,3 +29,13 @@ export async function GetSubDistricts(req: Request, res: Response, next: NextFun
         next(error);
     }
 }
+
+export async function VerifyEmail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { verifyToken } = req.query;
+    await coreService.VerifyEmail(verifyToken as string);
+    res.json({ message: "Email verified successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
