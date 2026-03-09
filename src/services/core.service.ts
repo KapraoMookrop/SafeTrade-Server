@@ -328,8 +328,6 @@ export async function Verify2FA(email: string, token: string, type: Verify2FATyp
             `UPDATE ct.users SET twofa_enabled = true WHERE id = $1`,
             [user.id]
         );
-
-        return { status: "success", message: "2FA verified successfully" };
     } else if (type === Verify2FAType.VERIFYLOGIN) {
         const token = jwt.sign(
             {
