@@ -8,7 +8,6 @@ import { ENV } from "../config/env.js";
 import { type LoginResponseData } from "../module/LoginResponseData.js";
 import { AppError } from "../errors/AppError.js";
 import * as Core from "./core.service.js";
-import speakeasy from "speakeasy";
 
 export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
   const { FullName, Email, Password, Phone, AddressInfo, ProvinceId, DistrictId, SubDistrictId, ZipCode } = request;
@@ -73,31 +72,7 @@ export async function Login(email: string, password: string): Promise<LoginRespo
     } as LoginResponseData;
   }
 
-  const token = jwt.sign(
-    {
-      userId: user.id,
-      fullName: user.full_name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
-      kycStatus: user.kyc_status,
-      userStatus: user.status,
-      isEnabled2FA: user.twofa_enabled,
-    },
-    ENV.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
-
-  const loginResponseData: LoginResponseData = {
-    FullName: user.full_name,
-    Email: user.email,
-    Phone: user.phone,
-    Role: user.role,
-    KycStatus: user.kyc_status,
-    UserStatus: user.status,
-    JWT: token,
-    IsEnabled2FA: user.twofa_enabled,
-  };
+  const loginResponseData = await Core.SignJWT(user);
 
   return loginResponseData;
 }

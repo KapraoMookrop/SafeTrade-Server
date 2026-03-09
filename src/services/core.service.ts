@@ -329,33 +329,46 @@ export async function Verify2FA(email: string, token: string, type: Verify2FATyp
             [user.id]
         );
     } else if (type === Verify2FAType.VERIFYLOGIN) {
-        const token = jwt.sign(
-            {
-                userId: user.id,
-                fullName: user.full_name,
-                email: user.email,
-                role: user.role,
-                phone: user.phone,
-                kycStatus: user.kyc_status,
-                userStatus: user.status,
-                isEnabled2FA: user.twofa_enabled,
-            },
-            ENV.JWT_SECRET,
-            { expiresIn: "1d" }
-        );
-
-        const loginResponseData: LoginResponseData = {
-            FullName: user.full_name,
-            Email: user.email,
-            Phone: user.phone,
-            Role: user.role,
-            KycStatus: user.kyc_status,
-            UserStatus: user.status,
-            JWT: token,
-            IsEnabled2FA: user.twofa_enabled,
-        };
+        const loginResponseData = await SignJWT(user);
         return loginResponseData;
     } else {
         throw new AppError("ประเภทการยืนยัน 2FA ไม่ถูกต้อง", 400);
     }
+}
+
+export async function Disable2FA(userId: string) {
+    await pool.query(
+        `UPDATE ct.users SET twofa_enabled = false, twofa_secret = null WHERE id = $1`,
+        [userId]
+    );
+}
+
+export async function SignJWT(user: any) {
+    const token = jwt.sign(
+        {
+            userId: user.id,
+            fullName: user.full_name,
+            email: user.email,
+            role: user.role,
+            phone: user.phone,
+            kycStatus: user.kyc_status,
+            userStatus: user.status,
+            isEnabled2FA: user.twofa_enabled,
+        },
+        ENV.JWT_SECRET,
+        { expiresIn: "1d" }
+    );
+
+    const loginResponseData: LoginResponseData = {
+        FullName: user.full_name,
+        Email: user.email,
+        Phone: user.phone,
+        Role: user.role,
+        KycStatus: user.kyc_status,
+        UserStatus: user.status,
+        JWT: token,
+        IsEnabled2FA: user.twofa_enabled,
+    };
+
+    return loginResponseData;
 }
