@@ -8,6 +8,7 @@ import { ENV } from "../config/env.js";
 import { type LoginResponseData } from "../module/LoginResponseData.js";
 import { AppError } from "../errors/AppError.js";
 import * as Core from "./core.service.js";
+import type { UserLoginDataRequest } from "../module/UserLoginDataRequest.js";
 
 export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
   const { FullName, Email, Password, Phone, AddressInfo, ProvinceId, DistrictId, SubDistrictId, ZipCode } = request;
@@ -56,10 +57,11 @@ export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
   }
 }
 
-export async function Login(email: string, password: string): Promise<LoginResponseData> {
+export async function Login(request: UserLoginDataRequest): Promise<LoginResponseData> {
+  const { Email, Password } = request
   const result = await pool.query(
     "SELECT id, email, full_name, password_hash, phone, role, kyc_status, status, twofa_enabled, twofa_secret FROM ct.users WHERE email = $1",
-    [email]
+    [Email]
   );
 
   if (result.rows.length === 0) {
@@ -73,7 +75,7 @@ export async function Login(email: string, password: string): Promise<LoginRespo
     throw new AppError("บัญชีของคุณกำลังรอการยืนยันตัวตน กรุณาเช็คอีเมลที่ได้ลงทะเบียนไว้กับระบบ", 403);
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+  const isPasswordValid = await bcrypt.compare(Password, user.password_hash);
   if (!isPasswordValid) {
     throw new AppError("รหัสผ่านไม่ถูกต้อง", 401);
   }
