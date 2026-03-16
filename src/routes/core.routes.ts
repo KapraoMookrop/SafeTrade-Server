@@ -13,5 +13,7 @@ router.post("/Disable2FA", authenticateToken, coreController.Disable2FA);
 router.post("/Verify2FA", coreController.Verify2FA);
 router.post("/SendForgotPasswordEmail", coreController.SendForgotPasswordEmail);
 router.post("/ChangePassword", coreController.ChangePassword);
+router.post("/SendMailDeleteAccount", coreController.SendMailDeleteAccount);
+router.post("/DeleteAccount", coreController.DeleteAccount);
 
 export default router;

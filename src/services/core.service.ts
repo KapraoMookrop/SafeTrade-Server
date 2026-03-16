@@ -75,25 +75,7 @@ export async function GetSubDistricts(districtId: string): Promise<SubDistrictDa
 }
 
 export async function SendVerifyEmail(email: string, token: string) {
-    const sqlCoreMailPassword = await pool.query(
-        "select * from ct.configuration where code = 'CoreMailPassword'"
-    );
-    const CoreMailPassword = sqlCoreMailPassword.rows[0].value;
-
-    const sqlCoreMailUser = await pool.query(
-        "select * from ct.configuration where code = 'CoreMailUser'"
-    );
-    const CoreMailUser = sqlCoreMailUser.rows[0].value;
-
-    const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-            user: CoreMailUser,
-            pass: CoreMailPassword
-        }
-    });
+    const CoreMail = await GetCoreMail();
 
     const verification_link = `${ENV.CLIENT_URL}/verify-email/${token}`;
     const replacements: MailTemplateReplacements = {
@@ -121,8 +103,8 @@ export async function SendVerifyEmail(email: string, token: string) {
     }
     var html = GetMailTemplate("email-notify", replacements);
 
-    await transporter.sendMail({
-        from: `"Support Safe Trade" <${CoreMailUser}>`,
+    await CoreMail.transporter.sendMail({
+        from: `"Support Safe Trade" <${CoreMail.CoreMailUser}>`,
         to: email,
         subject: "ยืนยันอีเมลของคุณ",
         html: html
@@ -151,8 +133,6 @@ export async function Enable2FA(userId: string, email: string) {
         length: 20,
         name: "SafeTrade:" + email
     });
-
-    console.log("Secret for 2FA:", secret.base32);
 
     const qr = await QRCode.toDataURL(secret.otpauth_url as string);
 
@@ -246,25 +226,7 @@ export async function SendForgotPasswordEmail(email: string) {
         "UPDATE ct.users SET verify_token = gen_random_uuid(), verify_token_expire = NOW() + INTERVAL '1 hour' WHERE email = $1 RETURNING verify_token",
         [email]
     );
-
-    const sqlCoreMailPassword = await pool.query(
-        "select * from ct.configuration where code = 'CoreMailPassword'"
-    );
-    const CoreMailPassword = sqlCoreMailPassword.rows[0].value;
-    const sqlCoreMailUser = await pool.query(
-        "select * from ct.configuration where code = 'CoreMailUser'"
-    );
-    const CoreMailUser = sqlCoreMailUser.rows[0].value;
-
-    const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: {
-            user: CoreMailUser,
-            pass: CoreMailPassword
-        }
-    });
+    const CoreMail = await GetCoreMail();
 
     const verification_link = `${ENV.CLIENT_URL}/change-password/${setTokenResult.rows[0].verify_token}`;
     const replacements: MailTemplateReplacements = {
@@ -286,8 +248,8 @@ export async function SendForgotPasswordEmail(email: string) {
     }
 
     var html = GetMailTemplate("email-notify", replacements);
-    await transporter.sendMail({
-        from: `"Support Safe Trade" <${CoreMailUser}>`,
+    await CoreMail.transporter.sendMail({
+        from: `"Support Safe Trade" <${CoreMail.CoreMailUser}>`,
         to: email,
         subject: "คำขอเปลี่ยนรหัสผ่าน",
         html: html
@@ -305,6 +267,51 @@ export async function ChangePassword(token: string, newPassword: string) {
     await pool.query("UPDATE ct.users SET password_hash = $1, verify_token = NULL, verify_token_expire = NULL WHERE id = $2", [hashedPassword, userId]);
 }
 
+export async function SendMailDeleteAccount(email: string) {
+    const setTokenResult = await pool.query(
+        "UPDATE ct.users SET verify_token = gen_random_uuid(), verify_token_expire = NOW() + INTERVAL '1 hour' WHERE email = $1 RETURNING verify_token",
+        [email]
+    );
+    const CoreMail = await GetCoreMail();
+
+    const verification_link = `${ENV.CLIENT_URL}/delete-account/${setTokenResult.rows[0].verify_token}`;
+    const replacements: MailTemplateReplacements = {
+        header: `<h1 class="logo">SafeTrade</h1>
+                <p style="margin: 10px 0 0; opacity: 0.8; font-weight: 300;">Safe & Secure Computer Marketplace</p>`,
+        description: `<h2 class="welcome-text">คำร้องขอการลบบัญชี</h2>
+                      <p class="description">
+                        เราได้รับคำขอให้ลบบัญชีที่เชื่อมโยงกับอีเมลนี้ หากคุณไม่ได้ทำการร้องขอนี้<br>
+                        กรุณาอย่าคลิกที่ปุ่มด้านล่างและแจ้งให้เราทราบทันทีเพื่อความปลอดภัยของบัญชีคุณ
+                      </p>`,
+        body: `<div class="btn-container">
+                    <a href="${verification_link}" class="btn">ลบบัญชี</a>
+                </div>
+                <p style="font-size: 14px; color: #9ca3af;">
+                    หากปุ่มด้านบนใช้งานไม่ได้ โปรดคัดลอกลิงก์ด้านล่างไปวางในเบราว์เซอร์ของคุณ:<br>
+                    <a href="${verification_link}"
+                        style="color: #ac0017; word-break: break-all;">${verification_link}</a>
+                </p>`
+    }
+
+    var html = GetMailTemplate("email-notify", replacements);
+    await CoreMail.transporter.sendMail({
+        from: `"Support Safe Trade" <${CoreMail.CoreMailUser}>`,
+        to: email,
+        subject: "คำร้องขอการลบบัญชี",
+        html: html
+    });
+}
+
+export async function DeleteAccount(token: string) {
+    const result = await pool.query("SELECT id, verify_token_expire FROM ct.users WHERE verify_token = $1", [token]);
+    if (result.rows.length === 0) {
+        throw new AppError("ลิงก์การลบบัญชีไม่ถูกต้อง", 400);
+    }
+
+    const userId = result.rows[0].id;
+    await pool.query("DELETE FROM ct.users WHERE id = $1", [userId]);
+}
+
 function GetMailTemplate(templateName: string, replacements: MailTemplateReplacements) {
     const templatePath = path.join(__dirname, "../mail-template", `${templateName}.html`);
     let html = fs.readFileSync(templatePath, "utf8");
@@ -313,6 +320,30 @@ function GetMailTemplate(templateName: string, replacements: MailTemplateReplace
     html = html.replaceAll("{{body}}", replacements.body);
 
     return html;
+}
+
+async function GetCoreMail(){
+    const sqlCoreMailPassword = await pool.query(
+        "select * from ct.configuration where code = 'CoreMailPassword'"
+    );
+    const CoreMailPassword = sqlCoreMailPassword.rows[0].value;
+
+    const sqlCoreMailUser = await pool.query(
+        "select * from ct.configuration where code = 'CoreMailUser'"
+    );
+    const CoreMailUser = sqlCoreMailUser.rows[0].value;
+
+    const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+            user: CoreMailUser,
+            pass: CoreMailPassword
+        }
+    });
+
+    return { transporter: transporter, CoreMailUser: CoreMailUser };
 }
 
 interface MailTemplateReplacements {

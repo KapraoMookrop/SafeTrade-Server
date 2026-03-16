@@ -35,7 +35,7 @@ export async function VerifyEmail(req: Request, res: Response, next: NextFunctio
     try {
         const { verifyToken } = req.query;
         await coreService.VerifyEmail(verifyToken as string);
-        res.json({ message: "Email verified successfully" });
+        res.json({ message: "ยืนยันอีเมลสำเร็จ" });
     } catch (error) {
         next(error);
     }
@@ -55,7 +55,7 @@ export async function Disable2FA(req: Request, res: Response, next: NextFunction
     try {
         const { userId } = (req as any).user;
         await coreService.Disable2FA(userId);
-        res.json({ message: "2FA disabled successfully" });
+        res.json({ message: "ปิดการใช้งานการยืนยันตัวตนแบบสองชั้นสำเร็จ" });
     } catch (error) {
         next(error);
     }
@@ -75,7 +75,7 @@ export async function SendForgotPasswordEmail(req: Request, res: Response, next:
     try {
         const { email } = req.body;
         await coreService.SendForgotPasswordEmail(email);
-        res.json({ message: "ส่งอีเมลรีเซ็ตรหัสผ่านสำเร็จ" });
+        res.json({ message: "ส่งอีเมลรีเซ็ตรหัสผ่านสำเร็จ กรุณาตรวจสอบอีเมลของคุณ" });
     } catch (error) {
         console.error("Error in SendForgotPasswordEmail controller:", error);
         next(error);
@@ -89,6 +89,28 @@ export async function ChangePassword(req: Request, res: Response, next: NextFunc
         res.json({ message: "เปลี่ยนรหัสผ่านสำเร็จ" });
     } catch (error) {
         console.error("Error in ChangePassword controller:", error);
+        next(error);
+    }
+}
+
+export async function SendMailDeleteAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { email } = req.body;
+        await coreService.SendMailDeleteAccount(email);
+        res.json({ message: "ส่งอีเมลยืนยันการลบบัญชีสำเร็จ กรุณาตรวจสอบอีเมลของคุณ" });
+    } catch (error) {
+        console.error("Error in SendMailDeleteAccount controller:", error);
+        next(error);
+    }
+}
+
+export async function DeleteAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { token } = req.body;
+        await coreService.DeleteAccount(token);
+        res.json({ message: "ลบบัญชีสำเร็จ" });
+    } catch (error) {
+        console.error("Error in DeleteAccount controller:", error);
         next(error);
     }
 }
