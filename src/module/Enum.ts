@@ -105,4 +105,5 @@ export enum DisputeStatus {
 export enum Verify2FAType {
   VERIFYLOGIN = "VERIFYLOGIN",
   VERIFYENABLE = "VERIFYENABLE",
+  VERIFY = "VERIFY",
 }

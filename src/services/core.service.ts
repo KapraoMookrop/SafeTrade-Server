@@ -179,7 +179,10 @@ export async function Verify2FA(email: string, token: string, type: Verify2FATyp
     } else if (type === Verify2FAType.VERIFYLOGIN) {
         const loginResponseData = await SignJWT(user);
         return loginResponseData;
-    } else {
+    } else if (type === Verify2FAType.VERIFY) {
+        return true;
+    }
+    else {
         throw new AppError("ประเภทการยืนยัน 2FA ไม่ถูกต้อง", 400);
     }
 }
@@ -262,6 +265,11 @@ export async function ChangePassword(token: string, newPassword: string) {
         throw new AppError("ลิงก์เปลี่ยนรหัสผ่านไม่ถูกต้อง", 400);
     }
 
+    if (result.rows[0].verify_token_expire < new Date()) {
+        await pool.query("UPDATE ct.users SET verify_token = NULL, verify_token_expire = NULL WHERE id = $1", [result.rows[0].id]);
+        throw new AppError("ลิงก์เปลี่ยนรหัสผ่านหมดอายุแล้ว กรุณาส่งคำร้องใหม่", 400);
+    }
+
     const userId = result.rows[0].id;
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await pool.query("UPDATE ct.users SET password_hash = $1, verify_token = NULL, verify_token_expire = NULL WHERE id = $2", [hashedPassword, userId]);
@@ -284,12 +292,12 @@ export async function SendMailDeleteAccount(email: string) {
                         กรุณาอย่าคลิกที่ปุ่มด้านล่างและแจ้งให้เราทราบทันทีเพื่อความปลอดภัยของบัญชีคุณ
                       </p>`,
         body: `<div class="btn-container">
-                    <a href="${verification_link}" class="btn">ลบบัญชี</a>
+                    <a href="${verification_link}" class="btn" style="background-color: #dc3545;">ลบบัญชี</a>
                 </div>
                 <p style="font-size: 14px; color: #9ca3af;">
                     หากปุ่มด้านบนใช้งานไม่ได้ โปรดคัดลอกลิงก์ด้านล่างไปวางในเบราว์เซอร์ของคุณ:<br>
                     <a href="${verification_link}"
-                        style="color: #ac0017; word-break: break-all;">${verification_link}</a>
+                        style="color: #dc3545; word-break: break-all;">${verification_link}</a>
                 </p>`
     }
 
@@ -308,6 +316,11 @@ export async function DeleteAccount(token: string) {
         throw new AppError("ลิงก์การลบบัญชีไม่ถูกต้อง", 400);
     }
 
+    if (result.rows[0].verify_token_expire < new Date()) {
+        await pool.query("UPDATE ct.users SET verify_token = NULL, verify_token_expire = NULL WHERE id = $1", [result.rows[0].id]);
+        throw new AppError("ลิงก์การลบบัญชีหมดอายุแล้ว กรุณาส่งคำร้องใหม่", 400);
+    }
+
     const userId = result.rows[0].id;
     await pool.query("DELETE FROM ct.users WHERE id = $1", [userId]);
 }
@@ -322,7 +335,7 @@ function GetMailTemplate(templateName: string, replacements: MailTemplateReplace
     return html;
 }
 
-async function GetCoreMail(){
+async function GetCoreMail() {
     const sqlCoreMailPassword = await pool.query(
         "select * from ct.configuration where code = 'CoreMailPassword'"
     );
