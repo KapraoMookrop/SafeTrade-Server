@@ -188,7 +188,7 @@ export async function Verify2FA(email: string, token: string, type: Verify2FATyp
     });
 
     if (!verified) {
-        throw new AppError("รหัส 2FA ไม่ถูกต้อง", 401);
+        throw new AppError("รหัส 2FA ไม่ถูกต้อง", 400);
     }
 
     if (type === Verify2FAType.VERIFYENABLE) {
