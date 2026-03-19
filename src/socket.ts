@@ -11,14 +11,13 @@ export const initSocket = (server: http.Server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
 
     socket.on("join-room", (chatRoomId: string) => {
       socket.join(chatRoomId);
     });
 
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
+      // console.log("User disconnected:", socket.id);
     });
   });
 
