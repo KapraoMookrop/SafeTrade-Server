@@ -7,6 +7,6 @@ const router = Router();
 router.post("/GetMessages", authenticateToken, chatController.GetMessages);
 router.post("/SendMessages", authenticateToken, chatController.SendMessages);
 router.post("/MarkAsRead", authenticateToken, chatController.MarkAsRead);
-router.post("/GetAllUnread", authenticateToken, chatController.GetAllUnread);
+router.get("/GetAllChatRooms", authenticateToken, chatController.GetAllChatRooms);
 
 export default router;

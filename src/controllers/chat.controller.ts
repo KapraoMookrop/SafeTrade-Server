@@ -28,9 +28,9 @@ export async function MarkAsRead(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function GetAllUnread(req: Request, res: Response, next: NextFunction) {
+export async function GetAllChatRooms(req: Request, res: Response, next: NextFunction) {
   try {
-    const users = await chatService.GetAllUnread(req.body.userId);
+    const users = await chatService.GetAllChatRooms(req.body.userId);
     res.json(users);
   } catch (error) {
     next(error);

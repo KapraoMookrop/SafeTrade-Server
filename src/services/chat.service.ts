@@ -7,6 +7,7 @@ import { AppError } from "../errors/AppError.js";
 import type { MessageRequestData } from "../module/MessageRequestData.js";
 import type { MessageDataList } from "../module/MessageDataList.js";
 import type { MessageData } from "../module/MessageData.js";
+import type { ChatRoomData } from "../module/ChatRoomData.js";
 
 export async function SendMessages(request: SendMessagesRequest): Promise<MessageData> {
     const { ChatRoomId, SenderId, ContentType, Content } = request;
@@ -44,24 +45,28 @@ export async function MarkAsRead(readMessagesRequest: ReadMessagesRequest) {
         [ChatRoomId, UserId]);
 }
 
-export async function GetAllUnread(userId: string) {
+export async function GetAllChatRooms(userId: string) : Promise<ChatRoomData[]> {
 
     const result = await pool.query(`SELECT
-                                        m.chat_room_id,
-                                        COUNT(*) AS unread_count
-                                    FROM ct.messages m
-                                    JOIN ct.chat_room_members cm
-                                        ON cm.chat_room_id = m.chat_room_id
+                                        cm.chat_room_id,
+                                        COUNT(m.*) FILTER (WHERE m.sender_id != $1 AND m.created_at > cm.last_read_at) AS unread_count
+                                    FROM ct.chat_room_members cm
+                                    LEFT JOIN ct.messages m
+                                        ON m.chat_room_id = cm.chat_room_id
                                     WHERE cm.user_id = $1
-                                        AND m.sender_id != $1
-                                        AND m.created_at > cm.last_read_at
-                                    GROUP BY m.chat_room_id`,
+                                    GROUP BY cm.chat_room_id
+                                    ORDER BY cm.chat_room_id;`,
         [userId]);
 
-    return result.rows;
+    const respone = result.rows.map((row) => ({
+        ChatRoomId: row.chat_room_id,
+        CountUnread: parseInt(row.unread_count, 10)
+    } as ChatRoomData));
+
+    return respone;
 }
 
-export async function GetMessages(request: MessageRequestData, userId: UUID) {
+export async function GetMessages(request: MessageRequestData, userId: UUID): Promise<MessageDataList> {
     const { ChatRoomId, Cursor } = request;
     const isHasPermission = await CheckPermission(ChatRoomId, userId);
     if (!isHasPermission) {
