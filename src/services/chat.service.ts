@@ -1,7 +1,8 @@
 import type { UUID } from "node:crypto";
 import pool from "../config/database.js";
 import type { SendMessagesRequest } from "../module/SendMessagesRequest.js";
-import { getIO } from "../socket.js";
+// import { getIO } from "../socket.js";
+import axios from "axios";
 import type { ReadMessagesRequest } from "../module/ReadMessagesRequest.js";
 import { AppError } from "../errors/AppError.js";
 import type { MessageRequestData } from "../module/MessageRequestData.js";
@@ -35,11 +36,21 @@ export async function SendMessages(request: SendMessagesRequest): Promise<Messag
         [ChatRoomId, SenderId]
     );
 
-    const io = getIO();
-    io.to(ChatRoomId).emit("new-message", message[0]);
-    members.rows.forEach((m) => {
-        io.to(m.user_id).emit("new-message-notify", message[0]);
-    });
+    // const io = getIO();
+    // io.to(ChatRoomId).emit("new-message", message[0]);
+    // members.rows.forEach((m) => {
+    //     io.to(m.user_id).emit("new-message-notify", message[0]);
+    // });
+    try {
+        await axios.post(process.env.SOCKET_URL + "/emit", {
+            type: "new-message",
+            chatRoomId: ChatRoomId,
+            userId: SenderId,
+            message: message[0]
+        });
+    } catch (err) {
+        throw new AppError("ส่งข้อความไม่สำเร็จ" + err, 500);
+    }
 
     return message[0]!;
 }
