@@ -16,6 +16,14 @@ export const initSocket = (server: http.Server) => {
       socket.join(chatRoomId);
     });
 
+    socket.on("leave-room", (chatRoomId: string) => {
+      socket.leave(chatRoomId);
+    });
+
+    socket.on("join-user", (userId: string) => {
+      socket.join(userId);
+    });
+
     socket.on("disconnect", () => {
       // console.log("User disconnected:", socket.id);
     });

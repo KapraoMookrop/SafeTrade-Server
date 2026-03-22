@@ -10,7 +10,7 @@ import type { MessageData } from "../module/MessageData.js";
 import type { ChatRoomData } from "../module/ChatRoomData.js";
 
 export async function SendMessages(request: SendMessagesRequest): Promise<MessageData> {
-    const { ChatRoomId, SenderId, ContentType, Content } = request;
+    const { ChatRoomId, SenderId, ContentType, Content, SenderName } = request;
 
     const result = await pool.query(
         "INSERT INTO ct.messages (chat_room_id, sender_id, content_type, content) VALUES ($1, $2, $3, $4) RETURNING *",
@@ -21,7 +21,7 @@ export async function SendMessages(request: SendMessagesRequest): Promise<Messag
         Id: msg.id,
         ChatRoomId: msg.chat_room_id,
         SenderId: msg.sender_id,
-        SenderName: msg.sender_name,
+        SenderName: SenderName,
         SenderRole: msg.sender_role,
         ContentType: msg.content_type,
         Content: msg.content,
@@ -30,8 +30,16 @@ export async function SendMessages(request: SendMessagesRequest): Promise<Messag
         CreatedAt: msg.created_at
     } as MessageData));
 
+    const members = await pool.query(
+        `SELECT user_id FROM ct.chat_room_members WHERE chat_room_id = $1 AND user_id != $2`,
+        [ChatRoomId, SenderId]
+    );
+
     const io = getIO();
     io.to(ChatRoomId).emit("new-message", message[0]);
+    members.rows.forEach((m) => {
+        io.to(m.user_id).emit("new-message-notify", message[0]);
+    });
 
     return message[0]!;
 }
@@ -45,22 +53,21 @@ export async function MarkAsRead(readMessagesRequest: ReadMessagesRequest) {
         [ChatRoomId, UserId]);
 }
 
-export async function GetAllChatRooms(userId: string) : Promise<ChatRoomData[]> {
+export async function GetAllChatRooms(userId: string): Promise<ChatRoomData[]> {
 
-    const result = await pool.query(`SELECT
-                                        cm.chat_room_id,
-                                        COUNT(m.*) FILTER (WHERE m.sender_id != $1 AND m.created_at > cm.last_read_at) AS unread_count
-                                    FROM ct.chat_room_members cm
-                                    LEFT JOIN ct.messages m
-                                        ON m.chat_room_id = cm.chat_room_id
-                                    WHERE cm.user_id = $1
-                                    GROUP BY cm.chat_room_id
-                                    ORDER BY cm.chat_room_id;`,
+    const result = await pool.query(`SELECT *
+                                        FROM ct.view_chat_room_list
+                                     WHERE user_id = $1
+                                     ORDER BY last_message_at DESC NULLS LAST;`,
         [userId]);
 
     const respone = result.rows.map((row) => ({
         ChatRoomId: row.chat_room_id,
-        CountUnread: parseInt(row.unread_count, 10)
+        CountUnread: parseInt(row.count_unread) || 0,
+        LastMessage: row.last_message,
+        LastMessageAt: row.last_message_at,
+        UserName: row.full_name,
+        UserAvatarUrl: row.user_avatar_url
     } as ChatRoomData));
 
     return respone;
