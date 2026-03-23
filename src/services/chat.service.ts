@@ -42,14 +42,16 @@ export async function SendMessages(request: SendMessagesRequest): Promise<Messag
     //     io.to(m.user_id).emit("new-message-notify", message[0]);
     // });
     try {
-        members.rows.forEach(async (m) => {
-            await axios.post(process.env.SOCKET_URL + "/emit", {
-                type: "new-message",
-                chatRoomId: ChatRoomId,
-                userId: m.user_id,
-                message: message[0]
-            });
-        });
+        await Promise.all(
+            members.rows.map((m) =>
+                axios.post(process.env.SOCKET_URL + "/emit", {
+                    type: "new-message",
+                    chatRoomId: ChatRoomId,
+                    userId: m.user_id,
+                    message: message[0]
+                })
+            )
+        );
     } catch (err) {
         throw new AppError("ส่งข้อความไม่สำเร็จ" + err, 500);
     }
