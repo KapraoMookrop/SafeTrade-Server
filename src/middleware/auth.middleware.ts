@@ -7,13 +7,13 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const token = authHeader?.split(" ")[1];
 
   if (!token) {
-    res.status(401).json({ message: "Access Token Required" });
+    res.status(401).json({ message: "คุณยังไม่ได้เข้าสู่ระบบ" });
     return;
   }
 
   jwt.verify(token, ENV.JWT_SECRET, (err: any, user: any) => {
     if (err) {
-      res.status(403).json({ message: "Invalid or Expired Token" });
+      res.status(401).json({ message: "กรุณาเข้าสู่ระบบอีกครั้ง" });
       return;
     }
     
