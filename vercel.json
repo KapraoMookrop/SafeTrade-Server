@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/src/ping",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
