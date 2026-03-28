@@ -1,10 +1,12 @@
 import { type NextFunction, type Request, type Response } from "express";
 import * as dealService from "../services/deal.service.js";
+import type { UserJWT } from "../module/UserJWT.js";
 
 export async function CreateChatRoom(req: Request, res: Response, next: NextFunction) {
   try {
-    const users = await dealService.CreateChatRoom(req.body);
-    res.json(users);
+    const userJWT = (req as any).user as UserJWT;
+    const result = await dealService.CreateChatRoom(req.body, userJWT);
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -12,8 +14,27 @@ export async function CreateChatRoom(req: Request, res: Response, next: NextFunc
 
 export async function CreateDeal(req: Request, res: Response, next: NextFunction) {
   try {
-    const users = await dealService.CreateDeal(req.body);
-    res.json(users);
+    const result = await dealService.CreateDeal(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function AcceptInvite(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await dealService.AcceptInvite(req.body.chatRoomMemberId);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function RejectInvite(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userJWT = (req as any).user as UserJWT;
+    const result = await dealService.RejectInvite(req.body.chatRoomMemberId, userJWT.userId);
+    res.json(result);
   } catch (error) {
     next(error);
   }

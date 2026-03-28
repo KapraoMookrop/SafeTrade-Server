@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/users", userRoutes);
-app.use("/api/deals", dealRoutes);
+app.use("/api/deal", dealRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/core", coreRoutes);
 

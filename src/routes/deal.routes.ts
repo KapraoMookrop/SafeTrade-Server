@@ -6,5 +6,7 @@ const router = Router();
 
 router.post("/CreateChatRoom", authenticateToken, dealController.CreateChatRoom);
 router.post("/CreateDeal", authenticateToken, dealController.CreateDeal);
+router.post("/AcceptInvite", authenticateToken, dealController.AcceptInvite);
+router.post("/RejectInvite", authenticateToken, dealController.RejectInvite);
 
 export default router;

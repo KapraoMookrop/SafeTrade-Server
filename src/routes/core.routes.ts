@@ -15,5 +15,8 @@ router.post("/SendForgotPasswordEmail", coreController.SendForgotPasswordEmail);
 router.post("/ChangePassword", coreController.ChangePassword);
 router.post("/SendMailDeleteAccount", coreController.SendMailDeleteAccount);
 router.post("/DeleteAccount", coreController.DeleteAccount);
+router.post("/FindUsers", authenticateToken, coreController.FindUsers);
+router.get("/GetNotifications", authenticateToken, coreController.GetNotifications);
+router.post("/MarkAllNotificationsAsRead", authenticateToken, coreController.MarkAllNotificationsAsRead);
 
 export default router;

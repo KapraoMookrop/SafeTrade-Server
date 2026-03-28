@@ -1,6 +1,7 @@
 import e, { type NextFunction, type Request, type Response } from "express";
 import * as coreService from "../services/core.service.js";
 import { Verify2FAType } from "../module/Enum.js";
+import type { UserJWT } from "../module/UserJWT.js";
 
 export async function GetProvinces(req: Request, res: Response, next: NextFunction) {
     try {
@@ -43,7 +44,7 @@ export async function VerifyEmail(req: Request, res: Response, next: NextFunctio
 
 export async function Enable2FA(req: Request, res: Response, next: NextFunction) {
     try {
-        const { userId, email } = (req as any).user;
+        const { userId, email } = (req as any).user as UserJWT;
         const result = await coreService.Enable2FA(userId, email);
         res.json(result);
     } catch (error) {
@@ -53,7 +54,7 @@ export async function Enable2FA(req: Request, res: Response, next: NextFunction)
 
 export async function Disable2FA(req: Request, res: Response, next: NextFunction) {
     try {
-        const { userId } = (req as any).user;
+        const { userId } = (req as any).user as UserJWT;
         await coreService.Disable2FA(userId);
         res.json({ message: "ปิดการใช้งานการยืนยันตัวตนแบบสองชั้นสำเร็จ" });
     } catch (error) {
@@ -111,6 +112,40 @@ export async function DeleteAccount(req: Request, res: Response, next: NextFunct
         res.json({ message: "ลบบัญชีสำเร็จ" });
     } catch (error) {
         console.error("Error in DeleteAccount controller:", error);
+        next(error);
+    }
+}
+
+export async function FindUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { textSearch } = req.body;
+        const { userId, role } = (req as any).user as UserJWT;
+        const users = await coreService.FindUsers(textSearch, userId, role);
+        res.json(users);
+    } catch (error) {
+        console.error("Error in FindUsers controller:", error);
+        next(error);
+    }
+}
+
+export async function GetNotifications(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { userId } = (req as any).user as UserJWT;
+        const sqlNotifications = await coreService.GetNotifications(userId);
+        res.json(sqlNotifications);
+    } catch (error) {
+        console.error("Error in GetNotifications controller:", error);
+        next(error);
+    }
+}
+
+export async function MarkAllNotificationsAsRead(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { userId } = (req as any).user as UserJWT;
+        await coreService.MarkAllNotificationsAsRead(userId);
+        res.json({ message: "ทำเครื่องหมายการแจ้งเตือนทั้งหมดว่าอ่านแล้วสำเร็จ" });
+    } catch (error) {
+        console.error("Error in MarkAllNotificationsAsRead controller:", error);
         next(error);
     }
 }

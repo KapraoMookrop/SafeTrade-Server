@@ -1,7 +1,7 @@
 import pool from "../config/database.js";
 import { AppError } from "../errors/AppError.js";
 import type { DistrictData } from "../module/DistrictData.js";
-import { UserStatus, Verify2FAType } from "../module/Enum.js";
+import { UserRole, UserStatus, Verify2FAType } from "../module/Enum.js";
 import type { LoginResponseData } from "../module/LoginResponseData.js";
 import jwt from "jsonwebtoken";
 import type { ProvinceData } from "../module/ProvinceData.js";
@@ -14,6 +14,8 @@ import { ENV } from "../config/env.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import type { DropDownData } from "../module/DropDownData.js";
+import type { NotificationData } from "../module/NotificationData.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -323,6 +325,50 @@ export async function DeleteAccount(token: string) {
 
     const userId = result.rows[0].id;
     await pool.query("DELETE FROM ct.users WHERE id = $1", [userId]);
+}
+
+export async function FindUsers(textInput: string, currentUserId: string, currentUserRole: UserRole): Promise<DropDownData[]> {
+    const sqlSelect = await pool.query(`SELECT id, email, full_name, phone, role 
+                                            FROM ct.users 
+                                        WHERE (full_name ILIKE '%' || $1 || '%' OR phone LIKE '%' || $1 || '%')  
+                                               AND id != $2 AND role != $3`,
+        [textInput, currentUserId, currentUserRole]
+    );
+
+    const result = sqlSelect.rows.map((row) => ({
+        Id: row.id,
+        DisplayText: `${row.full_name}`
+    } as DropDownData));
+
+    return result;
+}
+
+export async function GetNotifications(userId: string) {
+    const sqlNotifications = await pool.query(
+        `SELECT id, type, title, message, related_id, created_at 
+            FROM ct.notifications 
+        WHERE user_id = $1
+        ORDER BY created_at DESC`,
+        [userId]
+    );
+
+    const result = sqlNotifications.rows.map((row) => ({
+        Id: row.id,
+        Type: row.type,
+        Title: row.title,
+        Message: row.message,
+        RelatedId: row.related_id,
+        CreatedAt: row.created_at
+    } as NotificationData));
+
+    return result;
+}
+
+export async function MarkAllNotificationsAsRead(userId: string) {
+    await pool.query(
+        `UPDATE ct.notifications SET is_read = true WHERE user_id = $1`,
+        [userId]
+    );
 }
 
 function GetMailTemplate(templateName: string, replacements: MailTemplateReplacements) {

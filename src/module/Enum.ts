@@ -32,6 +32,11 @@ export enum ChatRoomStatus {
   CLOSED = "CLOSED",
 }
 
+export enum ChatRoomMemberStatus {
+  ACTIVE = "ACTIVE",
+  PENDING = "PENDING",
+}
+
 // ประเภทของ message
 export enum MessageContentType {
   TEXT = "TEXT",
@@ -106,4 +111,11 @@ export enum Verify2FAType {
   VERIFYLOGIN = "VERIFYLOGIN",
   VERIFYENABLE = "VERIFYENABLE",
   VERIFY = "VERIFY",
+}
+
+export enum NotificationType {
+  CHAT_INVITE = "CHAT_INVITE",
+  CHAT_REJECT = "CHAT_REJECT",
+  DEAL_UPDATE = "DEAL_UPDATE",
+  SYSTEM_ALERT = "SYSTEM_ALERT",
 }
