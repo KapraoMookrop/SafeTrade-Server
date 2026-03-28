@@ -345,7 +345,7 @@ export async function FindUsers(textInput: string, currentUserId: string, curren
 
 export async function GetNotifications(userId: string) {
     const sqlNotifications = await pool.query(
-        `SELECT id, type, title, message, related_id, created_at 
+        `SELECT id, type, title, message, related_id, is_read, created_at 
             FROM ct.notifications 
         WHERE user_id = $1
         ORDER BY created_at DESC`,
@@ -358,6 +358,7 @@ export async function GetNotifications(userId: string) {
         Title: row.title,
         Message: row.message,
         RelatedId: row.related_id,
+        IsRead: row.is_read,
         CreatedAt: row.created_at
     } as NotificationData));
 
