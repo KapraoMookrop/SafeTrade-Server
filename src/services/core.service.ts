@@ -343,6 +343,21 @@ export async function FindUsers(textInput: string, currentUserId: string, curren
     return result;
 }
 
+export async function FindBanks(textInput: string): Promise<DropDownData[]> {
+    const sqlSelect = await pool.query(`SELECT id, name_th, name_en
+                                            FROM ct.banks 
+                                        WHERE (name_th ILIKE '%' || $1 || '%' OR name_en ILIKE '%' || $1 || '%')`,
+        [textInput]
+    );
+
+    const result = sqlSelect.rows.map((row) => ({
+        Id: row.id,
+        DisplayText: `${row.name_th}`
+    } as DropDownData));
+
+    return result;
+}
+
 export async function GetNotifications(userId: string) {
     const sqlNotifications = await pool.query(
         `SELECT id, type, title, message, related_id, is_read, created_at 

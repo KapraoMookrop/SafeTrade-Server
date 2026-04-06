@@ -128,6 +128,17 @@ export async function FindUsers(req: Request, res: Response, next: NextFunction)
     }
 }
 
+export async function FindBanks(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { textSearch } = req.body;
+        const banks = await coreService.FindBanks(textSearch);
+        res.json(banks);
+    } catch (error) {
+        console.error("Error in FindBanks controller:", error);
+        next(error);
+    }
+}
+
 export async function GetNotifications(req: Request, res: Response, next: NextFunction) {
     try {
         const { userId } = (req as any).user as UserJWT;
