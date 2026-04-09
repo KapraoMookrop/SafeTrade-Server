@@ -9,6 +9,10 @@ import { type LoginResponseData } from "../module/LoginResponseData.js";
 import { AppError } from "../errors/AppError.js";
 import * as Core from "./core.service.js";
 import type { UserLoginDataRequest } from "../module/UserLoginDataRequest.js";
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import type { ApplySellerRequestData } from "../module/ApplySellerRequestData.js";
 
 export async function SignUp(request: SignUpDataRequest): Promise<UUID> {
   const { FullName, Email, Password, Phone, AddressInfo, ProvinceId, DistrictId, SubDistrictId, ZipCode } = request;
@@ -99,4 +103,35 @@ export async function CheckAlreadyExistsEmail(email: string): Promise<boolean> {
   }
 
   return false;
+}
+
+export async function ApplySeller(userId: string, request: ApplySellerRequestData) {
+  const { IdCardImage, SelfieImage, BankId, BankNumber } = request;
+  try {
+    const now = new Date();
+    const dateString = now.toISOString().split('T')[0];
+    const relativeDir = `verifications/${dateString}`;
+    const uploadDir = path.join(process.cwd(), 'storage', relativeDir);
+
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const idCardFileName = `id_${userId}_${uuidv4()}${path.extname(IdCardImage.originalname)}`;
+    const selfieFileName = `selfie_${userId}_${uuidv4()}${path.extname(SelfieImage.originalname)}`;
+
+    await fs.rename(IdCardImage.path, path.join(uploadDir, idCardFileName));
+    await fs.rename(SelfieImage.path, path.join(uploadDir, selfieFileName));
+
+    const idCardPathForDb = path.join(relativeDir, idCardFileName);
+    const selfiePathForDb = path.join(relativeDir, selfieFileName);
+
+    await pool.query(
+      `INSERT INTO ct.seller_verifications 
+      (user_id, id_card_url, selfie_url, status, bank_id, bank_number) 
+      VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, idCardPathForDb, selfiePathForDb, KycStatus.PENDING, BankId, BankNumber]
+    );
+
+  } catch (error) {
+    throw new AppError(`เกิดข้อผิดพลาดในการส่งคำขอ: ${error}`, 500);
+  }
 }

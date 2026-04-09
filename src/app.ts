@@ -6,6 +6,7 @@ import dealRoutes from "./routes/deal.routes.js";
 import coreRoutes from "./routes/core.routes.js";
 import { errorMiddleware } from "./middleware/errorMiddleware.js";
 import chatRoutes from "./routes/chat.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/deal", dealRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/core", coreRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(errorMiddleware);
 export default app;

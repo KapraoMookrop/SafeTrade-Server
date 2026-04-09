@@ -1,5 +1,7 @@
 import { type NextFunction, type Request, type Response } from "express";
 import * as userService from "../services/user.service.js";
+import type { UserJWT } from "../module/UserJWT.js";
+import { AppError } from "../errors/AppError.js";
 
 export async function SignUp(req: Request, res: Response, next: NextFunction) {
   try {
@@ -25,6 +27,30 @@ export async function CheckAlreadyExistsEmail(req: Request, res: Response, next:
     const { email } = req.query;
     const exists = await userService.CheckAlreadyExistsEmail(email as string);
     res.json({ exists });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function ApplySeller(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId } = (req as any).user as UserJWT;
+    console.log("ApplySeller userId:", userId);
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    const requestData = {
+      ...req.body,
+      IdCardImage: files['IdCardImage']?.[0],
+      SelfieImage: files['SelfieImage']?.[0]
+    };
+
+    if (!requestData.IdCardImage || !requestData.SelfieImage) {
+      throw new AppError('กรุณาอัปโหลดรูปภาพให้ครบถ้วน', 400);
+    }
+
+    const application = await userService.ApplySeller(userId, requestData);
+    res.json(application);
+
   } catch (error) {
     next(error);
   }
